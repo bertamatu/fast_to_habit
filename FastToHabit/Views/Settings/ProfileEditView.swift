@@ -10,8 +10,10 @@ struct ProfileEditView: View {
     @Environment(\.dismiss) private var dismiss
     
     @AppStorage("userWeight") private var savedWeight: String = ""
+    @AppStorage("userGoalWeight") private var savedGoalWeight: String = ""
     
     @State private var weight: String = ""
+    @State private var goalWeight: String = ""
     @State private var showingSaveAlert = false
     
     // MARK: - Body
@@ -19,7 +21,7 @@ struct ProfileEditView: View {
     var body: some View {
         NavigationView {
             Form {
-                // Weight Section
+                // Current Weight Section
                 Section {
                     HStack {
                         Image(systemName: "scalemass")
@@ -34,9 +36,29 @@ struct ProfileEditView: View {
                             .foregroundColor(.secondary)
                     }
                 } header: {
-                    Text("Weight")
+                    Text("Current Weight")
                 } footer: {
                     Text("Enter your current weight in kilograms")
+                }
+                
+                // Goal Weight Section
+                Section {
+                    HStack {
+                        Image(systemName: "target")
+                            .foregroundColor(.brandSecondary)
+                            .frame(width: 30)
+                        
+                        TextField("65", text: $goalWeight)
+                            .keyboardType(.decimalPad)
+                            .font(.bodyRegular)
+                        
+                        Text("kg")
+                            .foregroundColor(.secondary)
+                    }
+                } header: {
+                    Text("Goal Weight")
+                } footer: {
+                    Text("Enter your target weight goal")
                 }
                 
                 // Info Section
@@ -44,7 +66,7 @@ struct ProfileEditView: View {
                     HStack {
                         Image(systemName: "info.circle")
                             .foregroundColor(.brandAccent)
-                        Text("Your weight helps us track your progress over time")
+                        Text("Track your weight progress towards your goal")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
@@ -67,8 +89,9 @@ struct ProfileEditView: View {
                 }
             }
             .onAppear {
-                // Load existing value
+                // Load existing values
                 weight = savedWeight
+                goalWeight = savedGoalWeight
             }
             .alert("Profile Saved", isPresented: $showingSaveAlert) {
                 Button("OK") {
@@ -84,8 +107,8 @@ struct ProfileEditView: View {
     
     /// Check if form is valid
     private var isValid: Bool {
-        // Weight should be filled
-        !weight.isEmpty
+        // At least one field should be filled
+        !weight.isEmpty || !goalWeight.isEmpty
     }
     
     // MARK: - Actions
@@ -93,6 +116,7 @@ struct ProfileEditView: View {
     /// Save profile data
     private func saveProfile() {
         savedWeight = weight
+        savedGoalWeight = goalWeight
         showingSaveAlert = true
     }
 }

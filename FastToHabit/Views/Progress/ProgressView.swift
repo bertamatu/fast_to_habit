@@ -8,7 +8,34 @@ struct ProgressView: View {
     // MARK: - State
     
     @AppStorage("userWeight") private var currentWeight: String = ""
-    @State private var hasData = false // TODO: Connect to real data
+    @AppStorage("userGoalWeight") private var goalWeight: String = ""
+    
+    // Computed property to check if we have any data
+    private var hasData: Bool {
+        !currentWeight.isEmpty
+    }
+    
+    // Calculate weight difference
+    private var weightDifference: Double? {
+        guard let current = Double(currentWeight),
+              let goal = Double(goalWeight) else { return nil }
+        return current - goal
+    }
+    
+    // Calculate progress percentage
+    private var weightProgress: Double {
+        guard let current = Double(currentWeight),
+              let goal = Double(goalWeight),
+              goal > 0 else { return 0 }
+        
+        // Assuming starting weight was higher, calculate how close to goal
+        let difference = current - goal
+        if difference <= 0 {
+            return 1.0 // Goal reached or exceeded
+        }
+        // This is simplified - in real app, you'd track starting weight
+        return max(0, min(1.0, 1.0 - (difference / current)))
+    }
     
     // MARK: - Body
     
@@ -20,11 +47,10 @@ struct ProgressView: View {
                         // Weight Progress Section
                         weightProgressSection
                         
-                        // Fasting Stats Section
-                        fastingStatsSection
-                        
-                        // Recent Activity Section
-                        recentActivitySection
+                        // Weight Goal Section
+                        if !goalWeight.isEmpty {
+                            weightGoalSection
+                        }
                     } else {
                         // Empty State
                         emptyStateView
@@ -41,142 +67,152 @@ struct ProgressView: View {
     
     /// Weight progress card with chart
     private var weightProgressSection: some View {
-        Card(title: "Weight Progress") {
+        Card(title: "Weight Tracking") {
             VStack(spacing: Constants.Spacing.medium) {
-                // Current weight display
+                if !currentWeight.isEmpty {
+                    // Current weight display
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Current Weight")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            
+                            Text("\(currentWeight) kg")
+                                .font(.titleLarge)
+                                .fontWeight(.bold)
+                                .foregroundColor(.primary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Status indicator
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("Status")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.caption)
+                                Text("Set")
+                                    .font(.subheadline)
+                            }
+                            .foregroundColor(.success)
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // Info message
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.brandPrimary)
+                        Text("Update your weight in Settings to track progress over time")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    // No weight set
+                    VStack(spacing: Constants.Spacing.medium) {
+                        Image(systemName: "scalemass")
+                            .font(.system(size: 50))
+                            .foregroundColor(.secondary)
+                        
+                        Text("No Weight Recorded")
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                        
+                        Text("Add your weight in Settings or during onboarding to track your progress")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, Constants.Spacing.small)
+                }
+            }
+        }
+    }
+    
+    /// Weight goal section with progress
+    private var weightGoalSection: some View {
+        Card(title: "Weight Goal") {
+            VStack(spacing: Constants.Spacing.medium) {
+                // Goal info
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Current Weight")
+                        Text("Target Weight")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         
-                        Text(currentWeight.isEmpty ? "--" : "\(currentWeight) kg")
-                            .font(.titleLarge)
+                        Text("\(goalWeight) kg")
+                            .font(.titleMedium)
                             .fontWeight(.bold)
                             .foregroundColor(.primary)
                     }
                     
                     Spacer()
                     
-                    // Change indicator (placeholder)
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.down")
-                            .font(.caption)
-                        Text("2.5 kg")
-                            .font(.subheadline)
-                    }
-                    .foregroundColor(.success)
-                }
-                
-                // Chart placeholder
-                VStack {
-                    HStack(alignment: .bottom, spacing: 8) {
-                        ForEach(0..<7) { index in
-                            VStack {
-                                Spacer()
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.brandPrimary.opacity(0.7))
-                                    .frame(height: CGFloat.random(in: 40...120))
-                            }
-                        }
-                    }
-                    .frame(height: 120)
-                    
-                    Text("Last 7 days")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, Constants.Spacing.small)
-            }
-        }
-    }
-    
-    /// Fasting statistics cards
-    private var fastingStatsSection: some View {
-        VStack(spacing: Constants.Spacing.medium) {
-            Text("Fasting Stats")
-                .font(.headline)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            // Stats grid
-            HStack(spacing: Constants.Spacing.medium) {
-                // Total Fasts
-                statCard(
-                    title: "Total Fasts",
-                    value: "12",
-                    icon: "checkmark.circle.fill",
-                    color: .brandPrimary
-                )
-                
-                // Current Streak
-                statCard(
-                    title: "Streak",
-                    value: "5 days",
-                    icon: "flame.fill",
-                    color: .brandSecondary
-                )
-            }
-            
-            HStack(spacing: Constants.Spacing.medium) {
-                // This Week
-                statCard(
-                    title: "This Week",
-                    value: "4",
-                    icon: "calendar",
-                    color: .brandAccent
-                )
-                
-                // Average Duration
-                statCard(
-                    title: "Avg Duration",
-                    value: "16h",
-                    icon: "clock.fill",
-                    color: .success
-                )
-            }
-        }
-    }
-    
-    /// Recent activity list
-    private var recentActivitySection: some View {
-        Card(title: "Recent Activity") {
-            VStack(spacing: Constants.Spacing.small) {
-                ForEach(0..<5) { index in
-                    HStack {
-                        // Date
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Oct \(5 - index)")
+                    if let diff = weightDifference {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Text("To Go")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            Text("16:8 Fast")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
+                            
+                            HStack(spacing: 4) {
+                                if diff > 0 {
+                                    Image(systemName: "arrow.down")
+                                        .font(.caption)
+                                    Text(String(format: "%.1f kg", diff))
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.caption)
+                                    Text("Goal Reached!")
+                                        .font(.subheadline)
+                                        .fontWeight(.semibold)
+                                }
+                            }
+                            .foregroundColor(diff > 0 ? .brandPrimary : .success)
                         }
-                        
-                        Spacer()
-                        
-                        // Duration
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock.fill")
-                                .font(.caption)
-                                .foregroundColor(.brandPrimary)
-                            Text("16h 30m")
-                                .font(.subheadline)
-                                .foregroundColor(.primary)
-                        }
-                        
-                        // Status
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.success)
                     }
+                }
+                
+                // Progress bar
+                if weightProgress > 0 {
+                    Divider()
                     
-                    if index < 4 {
-                        Divider()
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Progress to Goal")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("\(Int(weightProgress * 100))%")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.brandPrimary)
+                        }
+                        
+                        GeometryReader { geometry in
+                            ZStack(alignment: .leading) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.gray.opacity(0.2))
+                                    .frame(height: 8)
+                                
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(Color.brandPrimary)
+                                    .frame(width: geometry.size.width * weightProgress, height: 8)
+                            }
+                        }
+                        .frame(height: 8)
                     }
                 }
             }
         }
     }
+    
     
     /// Empty state when no data
     private var emptyStateView: some View {
@@ -184,12 +220,12 @@ struct ProgressView: View {
             Spacer()
             
             EmptyStateView(
-                icon: "chart.line.uptrend.xyaxis",
-                title: "No Progress Data Yet",
-                message: "Start tracking your fasts and weight to see your progress here",
-                actionTitle: "Start Fasting",
+                icon: "scalemass",
+                title: "No Weight Data Yet",
+                message: "Add your weight in Settings or during onboarding to track your progress",
+                actionTitle: "Go to Settings",
                 action: {
-                    // TODO: Navigate to Fast tab
+                    // TODO: Navigate to Settings tab
                 }
             )
             
@@ -198,35 +234,6 @@ struct ProgressView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
-    // MARK: - Helper Views
-    
-    /// Stat card component
-    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(spacing: Constants.Spacing.small) {
-            Image(systemName: icon)
-                .font(.system(size: Constants.IconSize.medium))
-                .foregroundColor(color)
-            
-            Text(value)
-                .font(.titleMedium)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(Constants.Spacing.medium)
-        .background(Color.cardBackground)
-        .cornerRadius(Constants.CornerRadius.medium)
-        .shadow(
-            color: .black.opacity(0.05),
-            radius: 4,
-            x: 0,
-            y: 2
-        )
-    }
 }
 
 // MARK: - SwiftUI Previews
