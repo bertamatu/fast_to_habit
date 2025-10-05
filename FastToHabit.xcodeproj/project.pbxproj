@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4CADE2062E9303B700DBF32C /* AIrules.md in Resources */ = {isa = PBXBuildFile; fileRef = 4CADE2052E9303B700DBF32C /* AIrules.md */; };
+		4CADE2082E9303C000DBF32C /* mvp_features.md in Resources */ = {isa = PBXBuildFile; fileRef = 4CADE2072E9303C000DBF32C /* mvp_features.md */; };
+		4CADE20B2E93052F00DBF32C /* app_store_submission_rules.md in Resources */ = {isa = PBXBuildFile; fileRef = 4CADE2092E93052F00DBF32C /* app_store_submission_rules.md */; };
+		4CADE20C2E93052F00DBF32C /* onboarding_view_best_practices.md in Resources */ = {isa = PBXBuildFile; fileRef = 4CADE20A2E93052F00DBF32C /* onboarding_view_best_practices.md */; };
+		4CADE20E2E93061F00DBF32C /* mvp_polish_UI_rules.md in Resources */ = {isa = PBXBuildFile; fileRef = 4CADE20D2E93061F00DBF32C /* mvp_polish_UI_rules.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		4CADE1E92E93038F00DBF32C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +35,11 @@
 		4CADE1D92E93038C00DBF32C /* FastToHabit.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FastToHabit.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CADE1E82E93038F00DBF32C /* FastToHabitTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FastToHabitTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4CADE1F22E93038F00DBF32C /* FastToHabitUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FastToHabitUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4CADE2052E9303B700DBF32C /* AIrules.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AIrules.md; sourceTree = "<group>"; };
+		4CADE2072E9303C000DBF32C /* mvp_features.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = mvp_features.md; sourceTree = "<group>"; };
+		4CADE2092E93052F00DBF32C /* app_store_submission_rules.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = app_store_submission_rules.md; sourceTree = "<group>"; };
+		4CADE20A2E93052F00DBF32C /* onboarding_view_best_practices.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = onboarding_view_best_practices.md; sourceTree = "<group>"; };
+		4CADE20D2E93061F00DBF32C /* mvp_polish_UI_rules.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = mvp_polish_UI_rules.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -79,6 +92,11 @@
 				4CADE1EB2E93038F00DBF32C /* FastToHabitTests */,
 				4CADE1F52E93038F00DBF32C /* FastToHabitUITests */,
 				4CADE1DA2E93038C00DBF32C /* Products */,
+				4CADE2052E9303B700DBF32C /* AIrules.md */,
+				4CADE2072E9303C000DBF32C /* mvp_features.md */,
+				4CADE2092E93052F00DBF32C /* app_store_submission_rules.md */,
+				4CADE20A2E93052F00DBF32C /* onboarding_view_best_practices.md */,
+				4CADE20D2E93061F00DBF32C /* mvp_polish_UI_rules.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -212,6 +230,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4CADE2062E9303B700DBF32C /* AIrules.md in Resources */,
+				4CADE20E2E93061F00DBF32C /* mvp_polish_UI_rules.md in Resources */,
+				4CADE2082E9303C000DBF32C /* mvp_features.md in Resources */,
+				4CADE20B2E93052F00DBF32C /* app_store_submission_rules.md in Resources */,
+				4CADE20C2E93052F00DBF32C /* onboarding_view_best_practices.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
