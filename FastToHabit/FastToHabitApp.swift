@@ -32,6 +32,13 @@ import SwiftData
 
 @main
 struct FastToHabitApp: App {
+    
+    // MARK: - State
+    
+    @State private var showLaunchScreen = true
+    
+    // MARK: - Model Container
+    
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -45,9 +52,30 @@ struct FastToHabitApp: App {
         }
     }()
 
+    // MARK: - Body
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ZStack {
+                // Main content
+                ContentView()
+                    .opacity(showLaunchScreen ? 0 : 1)
+                
+                // Launch screen overlay
+                if showLaunchScreen {
+                    LaunchScreen()
+                        .transition(.opacity)
+                        .zIndex(1)
+                }
+            }
+            .onAppear {
+                // Hide launch screen after 2 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                    withAnimation(.easeOut(duration: 0.5)) {
+                        showLaunchScreen = false
+                    }
+                }
+            }
         }
         .modelContainer(sharedModelContainer)
     }
