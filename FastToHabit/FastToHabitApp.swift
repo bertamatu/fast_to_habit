@@ -60,7 +60,7 @@ struct FastToHabitApp: App {
             ZStack {
                 // Main content or onboarding
                 if hasCompletedOnboarding {
-                    ContentView()
+                    MainTabView()
                         .opacity(showLaunchScreen ? 0 : 1)
                 } else {
                     OnboardingView(onComplete: {
