@@ -22,8 +22,11 @@ struct SettingsView: View {
                 // Profile Section
                 profileSection
                 
-                // Preferences Section
-                preferencesSection
+                // Units Section
+                unitsSection
+                
+                // Theme Section
+                themeSection
                 
                 // Notifications Section
                 notificationsSection
@@ -67,15 +70,35 @@ struct SettingsView: View {
         }
     }
     
-    /// Preferences section
-    private var preferencesSection: some View {
+    /// Units section
+    private var unitsSection: some View {
         Section {
-            Toggle(isOn: $useMetric) {
-                Label("Metric Units", systemImage: "ruler.fill")
-                    .foregroundColor(.primary)
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Label("Units", systemImage: "ruler.fill")
+                        .foregroundColor(.primary)
+                    
+                    Text(useMetric ? "kg, cm" : "lbs, ft")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Toggle("", isOn: $useMetric)
+                    .labelsHidden()
+                    .tint(.brandPrimary)
             }
-            .tint(.brandPrimary)
-            
+        } header: {
+            Text("Units")
+        } footer: {
+            Text(useMetric ? "Using metric system (kg, cm)" : "Using imperial system (lbs, ft)")
+        }
+    }
+    
+    /// Theme section
+    private var themeSection: some View {
+        Section {
             HStack {
                 Label("App Theme", systemImage: "paintbrush.fill")
                     .foregroundColor(.primary)
@@ -84,9 +107,9 @@ struct SettingsView: View {
                     .foregroundColor(.secondary)
             }
         } header: {
-            Text("Preferences")
+            Text("Appearance")
         } footer: {
-            Text("Metric units use cm and kg, imperial uses ft and lbs")
+            Text("App theme follows your device settings")
         }
     }
     
