@@ -9,10 +9,12 @@ struct ProgressView: View {
     
     @AppStorage("userWeight") private var currentWeight: String = ""
     @AppStorage("userGoalWeight") private var goalWeight: String = ""
+    @State private var weightEntries: [WeightEntry] = []
+    @State private var showingAddWeight = false
     
     // Computed property to check if we have any data
     private var hasData: Bool {
-        !currentWeight.isEmpty
+        !currentWeight.isEmpty || !weightEntries.isEmpty
     }
     
     // Calculate weight difference
@@ -47,9 +49,19 @@ struct ProgressView: View {
                         // Weight Progress Section
                         weightProgressSection
                         
+                        // Weight Chart
+                        if weightEntries.count >= 2 {
+                            weightChartSection
+                        }
+                        
                         // Weight Goal Section
                         if !goalWeight.isEmpty {
                             weightGoalSection
+                        }
+                        
+                        // Weight History
+                        if !weightEntries.isEmpty {
+                            weightHistorySection
                         }
                     } else {
                         // Empty State
@@ -60,6 +72,22 @@ struct ProgressView: View {
             }
             .background(Color.backgroundPrimary)
             .navigationTitle("Progress")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showingAddWeight = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .foregroundColor(.brandPrimary)
+                    }
+                }
+            }
+            .sheet(isPresented: $showingAddWeight) {
+                AddWeightView(onSave: loadWeightEntries)
+            }
+            .onAppear {
+                loadWeightEntries()
+            }
         }
     }
     
@@ -213,6 +241,172 @@ struct ProgressView: View {
         }
     }
     
+    /// Weight chart section with gradient line chart
+    private var weightChartSection: some View {
+        Card(title: "Weight Trend") {
+            VStack(spacing: Constants.Spacing.medium) {
+                // Line chart with gradient
+                GeometryReader { geometry in
+                    let chartData = Array(weightEntries.prefix(10).reversed())
+                    let maxWeight = chartData.map { $0.weight }.max() ?? 100
+                    let minWeight = chartData.map { $0.weight }.min() ?? 50
+                    let range = maxWeight - minWeight
+                    let adjustedRange = range < 5 ? 5 : range
+                    let chartHeight = geometry.size.height - 40
+                    let chartWidth = geometry.size.width - 45
+                    let leftPadding: CGFloat = 45
+                    
+                    ZStack(alignment: .topLeading) {
+                        // Grid lines
+                        VStack(spacing: 0) {
+                            ForEach(0..<5) { i in
+                                HStack(spacing: 0) {
+                                    Text(String(format: "%.0f", maxWeight - (adjustedRange / 4) * Double(i)))
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                        .frame(width: 35, alignment: .trailing)
+                                        .padding(.trailing, 5)
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.15))
+                                        .frame(height: 0.5)
+                                }
+                                Spacer()
+                            }
+                        }
+                        
+                        // Gradient fill under line
+                        Path { path in
+                            guard !chartData.isEmpty else { return }
+                            
+                            // Start from bottom left
+                            path.move(to: CGPoint(x: leftPadding, y: chartHeight))
+                            
+                            // Draw line through data points
+                            for (index, entry) in chartData.enumerated() {
+                                let x = chartWidth * CGFloat(index) / CGFloat(max(chartData.count - 1, 1)) + leftPadding
+                                let normalizedValue = (entry.weight - (maxWeight - adjustedRange)) / adjustedRange
+                                let y = chartHeight * (1 - normalizedValue)
+                                
+                                if index == 0 {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                            
+                            // Close path at bottom right
+                            if let lastIndex = chartData.indices.last {
+                                let lastX = chartWidth * CGFloat(lastIndex) / CGFloat(max(chartData.count - 1, 1)) + leftPadding
+                                path.addLine(to: CGPoint(x: lastX, y: chartHeight))
+                            }
+                            path.closeSubpath()
+                        }
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.brandPrimary.opacity(0.3),
+                                    Color.brandPrimary.opacity(0.05)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                        
+                        // Line
+                        Path { path in
+                            for (index, entry) in chartData.enumerated() {
+                                let x = chartWidth * CGFloat(index) / CGFloat(max(chartData.count - 1, 1)) + leftPadding
+                                let normalizedValue = (entry.weight - (maxWeight - adjustedRange)) / adjustedRange
+                                let y = chartHeight * (1 - normalizedValue)
+                                
+                                if index == 0 {
+                                    path.move(to: CGPoint(x: x, y: y))
+                                } else {
+                                    path.addLine(to: CGPoint(x: x, y: y))
+                                }
+                            }
+                        }
+                        .stroke(Color.brandPrimary, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                        
+                        // Data points with hover effect
+                        ForEach(Array(chartData.enumerated()), id: \.element.id) { index, entry in
+                            let x = chartWidth * CGFloat(index) / CGFloat(max(chartData.count - 1, 1)) + leftPadding
+                            let normalizedValue = (entry.weight - (maxWeight - adjustedRange)) / adjustedRange
+                            let y = chartHeight * (1 - normalizedValue)
+                            
+                            ZStack {
+                                // Outer circle (white background)
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 10, height: 10)
+                                    .shadow(color: Color.brandPrimary.opacity(0.3), radius: 2, x: 0, y: 1)
+                                
+                                // Inner circle (brand color)
+                                Circle()
+                                    .fill(Color.brandPrimary)
+                                    .frame(width: 6, height: 6)
+                            }
+                            .position(x: x, y: y)
+                        }
+                    }
+                }
+                .frame(height: 200)
+                
+                Text("Last \(min(weightEntries.count, 10)) entries")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    /// Weight history section
+    private var weightHistorySection: some View {
+        Card(title: "Weight History") {
+            VStack(spacing: Constants.Spacing.small) {
+                ForEach(weightEntries.prefix(5)) { entry in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry.date, style: .date)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            
+                            if let note = entry.note {
+                                Text(note)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Text(String(format: "%.1f kg", entry.weight))
+                            .font(.headline)
+                            .foregroundColor(.brandPrimary)
+                    }
+                    .padding(.vertical, 4)
+                    
+                    if entry.id != weightEntries.prefix(5).last?.id {
+                        Divider()
+                    }
+                }
+                
+                if weightEntries.count > 5 {
+                    Text("Showing 5 of \(weightEntries.count) entries")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Actions
+    
+    /// Load weight entries from storage
+    private func loadWeightEntries() {
+        weightEntries = WeightEntryManager.loadEntries()
+    }
     
     /// Empty state when no data
     private var emptyStateView: some View {
