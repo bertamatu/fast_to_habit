@@ -14,65 +14,69 @@ extension Color {
     // MARK: - Brand Colors
     
     /// Primary brand color - used for fasting-related features
-    /// Light: Blue #007AFF | Dark: Blue #0A84FF
+    /// Light: Teal #0A7EA4 | Dark: Cyan #64D2FF
     static let brandPrimary = Color("BrandPrimary")
     
     /// Secondary brand color - used for supplement-related features
-    /// Light: Purple #AF52DE | Dark: Purple #BF5AF2
+    /// Light: Purple #8B5CF6 | Dark: Purple #A78BFA
     static let brandSecondary = Color("BrandSecondary")
     
     /// Accent color - used for CTAs and important actions
-    /// Light: Blue #007AFF | Dark: Blue #0A84FF
+    /// Light: Mint Green #10B981 | Dark: Mint #34D399
     static let brandAccent = Color("BrandAccent")
     
     // MARK: - Semantic Colors
     
     /// Color for active fasting state
-    /// Light: Blue #007AFF | Dark: Blue #0A84FF
+    /// Light: Teal #0A7EA4 | Dark: Cyan #64D2FF
     static let fastingActive = Color("FastingActive")
     
     /// Color for completed fasting sessions
-    /// Light: Green #34C759 | Dark: Green #30D158
+    /// Light: Deep Green #059669 | Dark: Green #10B981
     static let fastingComplete = Color("FastingComplete")
     
     /// Color for supplement reminders
-    /// Light: Purple #AF52DE | Dark: Purple #BF5AF2
+    /// Light: Purple #8B5CF6 | Dark: Purple #A78BFA
     static let supplementReminder = Color("SupplementReminder")
     
     /// Color for supplement taken/completed
-    /// Light: Green #34C759 | Dark: Green #30D158
+    /// Light: Deep Green #059669 | Dark: Green #10B981
     static let supplementComplete = Color("SupplementComplete")
     
     // MARK: - Status Colors
     
     /// Success state color
-    /// Light: Green #34C759 | Dark: Green #30D158
+    /// Light: Deep Green #059669 | Dark: Green #10B981
     static let success = Color("Success")
     
     /// Warning state color
-    /// Light: Orange #FF9500 | Dark: Orange #FF9F0A
+    /// Light: Amber #F59E0B | Dark: Amber #FBBF24
     static let warning = Color("Warning")
     
     /// Error state color
-    /// Light: Red #FF3B30 | Dark: Red #FF453A
+    /// Light: Red #EF4444 | Dark: Red #F87171
     static let error = Color("Error")
     
     /// Info state color
-    /// Light: Blue #007AFF | Dark: Blue #0A84FF
+    /// Light: Teal #0A7EA4 | Dark: Cyan #64D2FF
     static let info = Color("Info")
     
     // MARK: - UI Colors
     
     /// Primary background color (adapts to light/dark mode)
+    /// Light: Off-white #F9FAFB | Dark: True Dark #111827
     static let backgroundPrimary = Color("BackgroundPrimary")
     
     /// Secondary background color (for cards, elevated surfaces)
+    /// Light: White #FFFFFF | Dark: Elevated Dark #1F2937
     static let backgroundSecondary = Color("BackgroundSecondary")
     
     /// Tertiary background color (for nested cards)
+    /// Light: Light Gray #F3F4F6 | Dark: Lighter Dark #374151
     static let backgroundTertiary = Color("BackgroundTertiary")
     
     /// Card background color
+    /// Light: White #FFFFFF | Dark: Elevated Dark #1F2937
     static let cardBackground = Color("CardBackground")
     
     /// Primary text color (adapts to light/dark mode)
@@ -107,9 +111,11 @@ extension Color {
     // MARK: - Gradient Colors
     
     /// Gradient for fasting timer (start color)
+    /// Light: Teal #0A7EA4 | Dark: Cyan #64D2FF
     static let fastingGradientStart = Color("FastingGradientStart")
     
     /// Gradient for fasting timer (end color)
+    /// Light: Mint #10B981 | Dark: Mint #34D399
     static let fastingGradientEnd = Color("FastingGradientEnd")
     
     // MARK: - Helper Methods

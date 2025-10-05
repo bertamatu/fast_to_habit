@@ -1,11 +1,13 @@
 # Color Setup Guide for Assets.xcassets
 
 **Time Required:** 15 minutes  
-**Location:** Xcode → Assets.xcassets
+**Location:** Xcode → Assets.xcassets  
+**Palette:** Modern iOS Health & Wellness
 
 ## 🎨 Color Values Reference
 
-Use these exact values when creating color sets in Xcode.
+Use these exact values when creating color sets in Xcode.  
+**This palette follows iOS 17/18 design trends** with health-focused colors.
 
 ---
 
@@ -34,42 +36,45 @@ For each color below, follow these steps:
 ### Brand Colors
 
 #### **BrandPrimary**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
-- **Usage:** Primary brand color, fasting features
+- **Light Mode:** #0A7EA4 (RGB: 10, 126, 164)
+- **Dark Mode:** #64D2FF (RGB: 100, 210, 255)
+- **Usage:** Primary brand color, fasting features, timer
+- **Inspiration:** iOS Health app teal
 
 #### **BrandSecondary**
-- **Light Mode:** #AF52DE (RGB: 175, 82, 222)
-- **Dark Mode:** #BF5AF2 (RGB: 191, 90, 242)
+- **Light Mode:** #8B5CF6 (RGB: 139, 92, 246)
+- **Dark Mode:** #A78BFA (RGB: 167, 139, 250)
 - **Usage:** Secondary brand color, supplement features
+- **Inspiration:** iOS Fitness+ purple
 
 #### **BrandAccent**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
-- **Usage:** CTAs, important actions
+- **Light Mode:** #10B981 (RGB: 16, 185, 129)
+- **Dark Mode:** #34D399 (RGB: 52, 211, 153)
+- **Usage:** CTAs, important actions, highlights
+- **Inspiration:** Fresh mint green
 
 ---
 
 ### Semantic Colors
 
 #### **FastingActive**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
+- **Light Mode:** #0A7EA4 (RGB: 10, 126, 164)
+- **Dark Mode:** #64D2FF (RGB: 100, 210, 255)
 - **Usage:** Active fasting state indicator
 
 #### **FastingComplete**
-- **Light Mode:** #34C759 (RGB: 52, 199, 89)
-- **Dark Mode:** #30D158 (RGB: 48, 209, 88)
+- **Light Mode:** #059669 (RGB: 5, 150, 105)
+- **Dark Mode:** #10B981 (RGB: 16, 185, 129)
 - **Usage:** Completed fasting sessions
 
 #### **SupplementReminder**
-- **Light Mode:** #AF52DE (RGB: 175, 82, 222)
-- **Dark Mode:** #BF5AF2 (RGB: 191, 90, 242)
+- **Light Mode:** #8B5CF6 (RGB: 139, 92, 246)
+- **Dark Mode:** #A78BFA (RGB: 167, 139, 250)
 - **Usage:** Supplement reminder notifications
 
 #### **SupplementComplete**
-- **Light Mode:** #34C759 (RGB: 52, 199, 89)
-- **Dark Mode:** #30D158 (RGB: 48, 209, 88)
+- **Light Mode:** #059669 (RGB: 5, 150, 105)
+- **Dark Mode:** #10B981 (RGB: 16, 185, 129)
 - **Usage:** Supplement taken/completed
 
 ---
@@ -77,107 +82,101 @@ For each color below, follow these steps:
 ### Status Colors
 
 #### **Success**
-- **Light Mode:** #34C759 (RGB: 52, 199, 89)
-- **Dark Mode:** #30D158 (RGB: 48, 209, 88)
+- **Light Mode:** #059669 (RGB: 5, 150, 105)
+- **Dark Mode:** #10B981 (RGB: 16, 185, 129)
 - **Usage:** Success messages, completed states
 
 #### **Warning**
-- **Light Mode:** #FF9500 (RGB: 255, 149, 0)
-- **Dark Mode:** #FF9F0A (RGB: 255, 159, 10)
+- **Light Mode:** #F59E0B (RGB: 245, 158, 11)
+- **Dark Mode:** #FBBF24 (RGB: 251, 191, 36)
 - **Usage:** Warning messages, reminders
 
 #### **Error**
-- **Light Mode:** #FF3B30 (RGB: 255, 59, 48)
-- **Dark Mode:** #FF453A (RGB: 255, 69, 58)
+- **Light Mode:** #EF4444 (RGB: 239, 68, 68)
+- **Dark Mode:** #F87171 (RGB: 248, 113, 113)
 - **Usage:** Error messages, alerts
 
 #### **Info**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
+- **Light Mode:** #0A7EA4 (RGB: 10, 126, 164)
+- **Dark Mode:** #64D2FF (RGB: 100, 210, 255)
 - **Usage:** Informational messages
-
 ---
 
 ### UI Colors
 
 #### **BackgroundPrimary**
-- **Light Mode:** #FFFFFF (RGB: 255, 255, 255) - White
-- **Dark Mode:** #000000 (RGB: 0, 0, 0) - Black
-- **Usage:** Main background
+- **Light Mode:** #F9FAFB (RGB: 249, 250, 251)
+- **Dark Mode:** #111827 (RGB: 17, 24, 39)
+- **Usage:** Main screen background (OLED-friendly dark)
 
 #### **BackgroundSecondary**
-- **Light Mode:** #F2F2F7 (RGB: 242, 242, 247)
-- **Dark Mode:** #1C1C1E (RGB: 28, 28, 30)
-- **Usage:** Cards, elevated surfaces
+- **Light Mode:** #FFFFFF (RGB: 255, 255, 255)
+- **Dark Mode:** #1F2937 (RGB: 31, 41, 55)
+- **Usage:** Card backgrounds, elevated surfaces
 
 #### **BackgroundTertiary**
-- **Light Mode:** #FFFFFF (RGB: 255, 255, 255)
-- **Dark Mode:** #2C2C2E (RGB: 44, 44, 46)
-- **Usage:** Nested cards, grouped backgrounds
+- **Light Mode:** #F3F4F6 (RGB: 243, 244, 246)
+- **Dark Mode:** #374151 (RGB: 55, 65, 81)
+- **Usage:** Nested cards, input fields backgrounds
 
 #### **CardBackground**
 - **Light Mode:** #FFFFFF (RGB: 255, 255, 255)
-- **Dark Mode:** #1C1C1E (RGB: 28, 28, 30)
-- **Usage:** Card components
+- **Dark Mode:** #1F2937 (RGB: 31, 41, 55)
+- **Usage:** Card container background
 
 #### **TextTertiary**
-- **Light Mode:** #8E8E93 (RGB: 142, 142, 147)
-- **Dark Mode:** #8E8E93 (RGB: 142, 142, 147)
-- **Usage:** Hints, placeholders, less important text
+- **Light Mode:** #9CA3AF (RGB: 156, 163, 175)
+- **Dark Mode:** #6B7280 (RGB: 107, 114, 128)
+- **Usage:** Hints, placeholders, disabled text
 
 #### **Divider**
-- **Light Mode:** #C6C6C8 (RGB: 198, 198, 200)
-- **Dark Mode:** #38383A (RGB: 56, 56, 58)
+- **Light Mode:** #E5E7EB (RGB: 229, 231, 235)
+- **Dark Mode:** #374151 (RGB: 55, 65, 81)
 - **Usage:** Separators, dividers
 
 #### **Border**
-- **Light Mode:** #D1D1D6 (RGB: 209, 209, 214)
-- **Dark Mode:** #48484A (RGB: 72, 72, 74)
-- **Usage:** Borders, outlines
+- **Light Mode:** #D1D5DB (RGB: 209, 213, 219)
+- **Dark Mode:** #4B5563 (RGB: 75, 85, 99)
+- **Usage:** Input borders, outlines
 
 ---
 
 ### Interactive Colors
 
 #### **ButtonPrimary**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
+- **Light Mode:** #0A7EA4 (RGB: 10, 126, 164)
+- **Dark Mode:** #64D2FF (RGB: 100, 210, 255)
 - **Usage:** Primary button background
 
 #### **ButtonSecondary**
-- **Light Mode:** #F2F2F7 (RGB: 242, 242, 247)
-- **Dark Mode:** #2C2C2E (RGB: 44, 44, 46)
-- **Usage:** Secondary button background
+- **Light Mode:** Transparent
+- **Dark Mode:** Transparent
+- **Usage:** Secondary button background (outlined)
 
 #### **ButtonText**
 - **Light Mode:** #FFFFFF (RGB: 255, 255, 255)
 - **Dark Mode:** #FFFFFF (RGB: 255, 255, 255)
 - **Usage:** Button text color
 
-#### **Disabled**
-- **Light Mode:** #C6C6C8 (RGB: 198, 198, 200) - 40% opacity
-- **Dark Mode:** #48484A (RGB: 72, 72, 74) - 40% opacity
-- **Usage:** Disabled state for buttons and inputs
-
 ---
 
 ### Gradient Colors
 
 #### **FastingGradientStart**
-- **Light Mode:** #007AFF (RGB: 0, 122, 255)
-- **Dark Mode:** #0A84FF (RGB: 10, 132, 255)
-- **Usage:** Fasting timer gradient start
+- **Light Mode:** #0A7EA4 (RGB: 10, 126, 164)
+- **Dark Mode:** #64D2FF (RGB: 100, 210, 255)
+- **Usage:** Fasting timer gradient start color
 
 #### **FastingGradientEnd**
-- **Light Mode:** #5856D6 (RGB: 88, 86, 214)
-- **Dark Mode:** #5E5CE6 (RGB: 94, 92, 230)
-- **Usage:** Fasting timer gradient end
+- **Light Mode:** #10B981 (RGB: 16, 185, 129)
+- **Dark Mode:** #34D399 (RGB: 52, 211, 153)
+- **Usage:** Fasting timer gradient end color
 
 ---
 
 ## 🎯 Quick Setup Checklist
 
-- [ ] Open Xcode and navigate to Assets.xcassets
+{{ ... }}
 - [ ] Create all Brand Colors (3 colors)
 - [ ] Create all Semantic Colors (4 colors)
 - [ ] Create all Status Colors (4 colors)
