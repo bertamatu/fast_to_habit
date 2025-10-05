@@ -7,12 +7,12 @@ struct SettingsView: View {
     
     // MARK: - State
     
-    @AppStorage("userHeight") private var height: String = ""
     @AppStorage("userWeight") private var weight: String = ""
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("useMetric") private var useMetric = true
     
     @State private var showingResetAlert = false
+    @State private var showingProfileEdit = false
     
     // MARK: - Body
     
@@ -36,32 +36,34 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
         }
+        .sheet(isPresented: $showingProfileEdit) {
+            ProfileEditView()
+        }
     }
     
     // MARK: - Sections
     
-    /// Profile section with height and weight
+    /// Profile section with weight
     private var profileSection: some View {
         Section {
-            HStack {
-                Label("Height", systemImage: "ruler")
-                    .foregroundColor(.primary)
-                Spacer()
-                Text(height.isEmpty ? "Not set" : "\(height) cm")
-                    .foregroundColor(.secondary)
-            }
-            
-            HStack {
-                Label("Weight", systemImage: "scalemass")
-                    .foregroundColor(.primary)
-                Spacer()
-                Text(weight.isEmpty ? "Not set" : "\(weight) kg")
-                    .foregroundColor(.secondary)
+            Button {
+                showingProfileEdit = true
+            } label: {
+                HStack {
+                    Label("Weight", systemImage: "scalemass")
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Text(weight.isEmpty ? "Not set" : "\(weight) kg")
+                        .foregroundColor(.secondary)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         } header: {
             Text("Profile")
         } footer: {
-            Text("Your height and weight help track your progress")
+            Text("Tap to edit your weight for progress tracking")
         }
     }
     
@@ -184,11 +186,9 @@ struct SettingsView: View {
     private func resetAllData() {
         // Clear UserDefaults
         UserDefaults.standard.removeObject(forKey: "hasCompletedOnboarding")
-        UserDefaults.standard.removeObject(forKey: "userHeight")
         UserDefaults.standard.removeObject(forKey: "userWeight")
         
         // Reset state
-        height = ""
         weight = ""
         
         // App will restart to onboarding

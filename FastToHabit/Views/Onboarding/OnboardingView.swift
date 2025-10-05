@@ -13,9 +13,6 @@ struct OnboardingView: View {
     /// Current page index
     @State private var currentPage = 0
     
-    /// User's height in cm
-    @State private var height: String = ""
-    
     /// User's weight in kg
     @State private var weight: String = ""
     
@@ -185,19 +182,6 @@ struct OnboardingView: View {
             }
             
             VStack(spacing: Constants.Spacing.medium) {
-                // Height input
-                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                    Text("Height (cm)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    TextField("170", text: $height)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.bodyRegular)
-                        .accessibilityLabel("Height in centimeters")
-                }
-                
                 // Weight input
                 VStack(alignment: .leading, spacing: Constants.Spacing.small) {
                     Text("Weight (kg)")
@@ -262,9 +246,6 @@ struct OnboardingView: View {
     /// Complete onboarding and dismiss
     private func completeOnboarding() {
         // Save user data if provided
-        if !height.isEmpty {
-            UserDefaults.standard.set(height, forKey: "userHeight")
-        }
         if !weight.isEmpty {
             UserDefaults.standard.set(weight, forKey: "userWeight")
         }
