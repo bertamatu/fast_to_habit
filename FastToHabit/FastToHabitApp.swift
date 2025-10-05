@@ -36,6 +36,7 @@ struct FastToHabitApp: App {
     // MARK: - State
     
     @State private var showLaunchScreen = true
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     
     // MARK: - Model Container
     
@@ -57,9 +58,16 @@ struct FastToHabitApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                // Main content
-                ContentView()
+                // Main content or onboarding
+                if hasCompletedOnboarding {
+                    ContentView()
+                        .opacity(showLaunchScreen ? 0 : 1)
+                } else {
+                    OnboardingView(onComplete: {
+                        // Onboarding completed
+                    })
                     .opacity(showLaunchScreen ? 0 : 1)
+                }
                 
                 // Launch screen overlay
                 if showLaunchScreen {
