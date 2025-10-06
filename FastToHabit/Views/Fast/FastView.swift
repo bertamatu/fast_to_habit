@@ -8,8 +8,8 @@ struct FastView: View {
     
     // MARK: - State
     
-    @AppStorage("fastingStartTime") private var fastingStartTime: Double = 0
-    @AppStorage("fastingGoalHours") private var fastingGoalHours: Double = 16
+    @AppStorage("fastingSelectedHours") private var storedGoalHours: Double = 16
+    @StateObject private var sessionStore = FastSessionStore()
     @State private var currentTime = Date()
     @State private var timer: Timer?
     @State private var selectedPreset: FastPreset = .sixteenEight
@@ -19,20 +19,26 @@ struct FastView: View {
     
     // MARK: - Computed Properties
     
+    /// Currently active fasting session if any
+    private var activeSession: FastSession? {
+        sessionStore.activeSession
+    }
+    
     /// Check if currently fasting
     private var isFasting: Bool {
-        fastingStartTime > 0
+        activeSession != nil
     }
     
     /// Calculate elapsed time in seconds
     private var elapsedSeconds: TimeInterval {
-        guard isFasting else { return 0 }
-        return currentTime.timeIntervalSince(Date(timeIntervalSince1970: fastingStartTime))
+        guard let session = activeSession else { return 0 }
+        return currentTime.timeIntervalSince(session.startDate)
     }
     
     /// Calculate progress (0.0 to 1.0)
     private var progress: Double {
-        let goalSeconds = fastingGoalHours * 3600
+        guard let session = activeSession else { return 0 }
+        let goalSeconds = session.goalDurationHours * 3600
         return min(elapsedSeconds / goalSeconds, 1.0)
     }
     
@@ -75,9 +81,16 @@ struct FastView: View {
                     // Action Button
                     actionButton
                     
-                    // Quick Stats
+                    // Active Fast Details
                     if isFasting {
-                        quickStats
+                        activeFastDetails
+                    } else {
+                        fastSummaryCard
+                    }
+                    
+                    // History Section
+                    if !sessionStore.history.isEmpty {
+                        historySection
                     }
                 }
                 .padding(Constants.Spacing.large)
@@ -168,12 +181,12 @@ struct FastView: View {
     /// Status information
     private var statusInfo: some View {
         VStack(spacing: Constants.Spacing.small) {
-            if isFasting {
+            if let session = activeSession {
                 HStack {
                     Text("Goal:")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
-                    Text("\(Int(fastingGoalHours))h")
+                    Text("\(Int(session.goalDurationHours))h")
                         .font(.headline)
                         .foregroundColor(.primary)
                 }
@@ -268,8 +281,18 @@ struct FastView: View {
         .padding(.horizontal, Constants.Spacing.large)
     }
     
-    /// Quick stats when fasting
-    private var quickStats: some View {
+    /// Active fast details card
+    @ViewBuilder
+    private var activeFastDetails: some View {
+        if let session = activeSession {
+            activeFastCard(for: session)
+        } else {
+            EmptyView()
+        }
+    }
+
+    /// Helper to render active fast card content
+    private func activeFastCard(for session: FastSession) -> some View {
         Card(title: "Current Fast") {
             VStack(spacing: Constants.Spacing.medium) {
                 HStack {
@@ -277,14 +300,23 @@ struct FastView: View {
                         Text("Started")
                             .font(.caption)
                             .foregroundColor(.secondary)
-                        Text(startTimeString)
+                        Text(session.startDate, style: .time)
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
-                    
                     Spacer()
-                    
                     VStack(alignment: .trailing, spacing: 4) {
+                        Text("Ends")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(session.expectedEndDate, style: .time)
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                    }
+                }
+                
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text("Progress")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -293,24 +325,107 @@ struct FastView: View {
                             .fontWeight(.medium)
                             .foregroundColor(.brandPrimary)
                     }
+                    Spacer()
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Elapsed")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(elapsedTimeString)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
                 }
             }
         }
+    }
+
+    /// Summary stats card when no active fast
+    private var fastSummaryCard: some View {
+        Card(title: "Fasting Summary") {
+            VStack(spacing: Constants.Spacing.medium) {
+                HStack {
+                    summaryStat(title: "Completed", value: "\(sessionStore.completedCount)")
+                    Divider()
+                    summaryStat(title: "Streak", value: "\(sessionStore.currentStreak)")
+                }
+                HStack {
+                    summaryStat(title: "Longest", value: formattedHours(sessionStore.longestFastHours))
+                    Divider()
+                    summaryStat(title: "Average", value: formattedHours(sessionStore.averageFastHours))
+                }
+            }
+        }
+    }
+
+    /// History list section
+    private var historySection: some View {
+        Card(title: "Fast History") {
+            VStack(spacing: Constants.Spacing.small) {
+                ForEach(sessionStore.history.prefix(5)) { session in
+                    historyRow(for: session)
+                    if session.id != sessionStore.history.prefix(5).last?.id {
+                        Divider()
+                    }
+                }
+                if sessionStore.history.count > 5 {
+                    Text("Showing 5 of \(sessionStore.history.count) fasts")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, Constants.Spacing.small)
+                }
+            }
+        }
+    }
+
+    private func historyRow(for session: FastSession) -> some View {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let durationHours = session.elapsedSeconds / 3600
+        return HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(session.preset == .custom ? "Custom" : session.preset.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                if let completion = session.completionDate {
+                    Text(formatter.string(from: completion))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            Text(formattedHours(durationHours))
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+    }
+
+    private func summaryStat(title: String, value: String) -> some View {
+        VStack(spacing: 4) {
+            Text(value)
+                .font(.headline)
+                .fontWeight(.semibold)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
     }
     
     // MARK: - Computed Strings
     
     /// Format start time
     private var startTimeString: String {
-        let date = Date(timeIntervalSince1970: fastingStartTime)
+        guard let session = activeSession else { return "--" }
         let formatter = DateFormatter()
         formatter.timeStyle = .short
-        return formatter.string(from: date)
+        return formatter.string(from: session.startDate)
     }
     
     /// Calculate remaining time
     private var remainingTimeString: String {
-        let goalSeconds = fastingGoalHours * 3600
+        guard let session = activeSession else { return "Start a fast to see remaining time" }
+        let goalSeconds = session.goalDurationHours * 3600
         let remaining = max(0, goalSeconds - elapsedSeconds)
         let hours = Int(remaining) / 3600
         let minutes = (Int(remaining) % 3600) / 60
@@ -325,18 +440,28 @@ struct FastView: View {
     
     /// Start fasting
     private func startFast() {
-        fastingGoalHours = selectedGoalHours
-        fastingStartTime = Date().timeIntervalSince1970
+        let startDate = Date()
+        let session = FastSession(
+            preset: selectedPreset,
+            startDate: startDate,
+            goalDurationHours: selectedGoalHours,
+            status: .active
+        )
+        sessionStore.start(session: session)
+        storedGoalHours = selectedGoalHours
+        currentTime = startDate
+        startTimer()
     }
     
     /// End fasting
     private func endFast() {
-        // TODO: Save fast to history
-        fastingStartTime = 0
+        sessionStore.completeActiveSession()
+        stopTimer()
     }
     
     /// Start timer for updates
     private func startTimer() {
+        guard timer == nil else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             currentTime = Date()
         }
@@ -350,12 +475,20 @@ struct FastView: View {
 
     /// Synchronize preset selection with persisted goal hours
     private func syncPresetSelection() {
-        if let matchedPreset = FastPreset.allCases.first(where: { $0 != .custom && $0.defaultDurationHours == fastingGoalHours }) {
+        if let session = activeSession {
+            if session.preset != .custom {
+                selectedPreset = session.preset
+                customDurationHours = session.preset.defaultDurationHours
+            } else {
+                selectedPreset = .custom
+                customDurationHours = session.goalDurationHours
+            }
+        } else if let matchedPreset = FastPreset.allCases.first(where: { $0 != .custom && $0.defaultDurationHours == storedGoalHours }) {
             selectedPreset = matchedPreset
             customDurationHours = matchedPreset.defaultDurationHours
         } else {
             selectedPreset = .custom
-            customDurationHours = max(fastingGoalHours, 1)
+            customDurationHours = max(storedGoalHours, 1)
         }
     }
 
@@ -365,6 +498,15 @@ struct FastView: View {
             return "\(Int(selectedGoalHours))h"
         }
         return selectedPreset.displayName
+    }
+
+    /// Format hours nicely for summary cards
+    private func formattedHours(_ hours: Double) -> String {
+        guard hours > 0 else { return "--" }
+        if hours >= 10 {
+            return "\(Int(hours))h"
+        }
+        return String(format: "%.1fh", hours)
     }
 
     /// Provide subtle haptic feedback for preset selection
