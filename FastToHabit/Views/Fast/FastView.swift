@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Fasting timer main screen
 /// Features: Timer, start/stop, progress tracking
@@ -11,6 +12,10 @@ struct FastView: View {
     @AppStorage("fastingGoalHours") private var fastingGoalHours: Double = 16
     @State private var currentTime = Date()
     @State private var timer: Timer?
+    @State private var selectedPreset: FastPreset = .sixteenEight
+    @State private var customDurationHours: Double = 16
+    @State private var showingPresetPicker = false
+    @State private var showingCustomPresetSheet = false
     
     // MARK: - Computed Properties
     
@@ -37,6 +42,20 @@ struct FastView: View {
         let minutes = (Int(elapsedSeconds) % 3600) / 60
         return String(format: "%02d:%02d", hours, minutes)
     }
+
+    /// Goal hours determined by the selected preset or custom duration
+    private var selectedGoalHours: Double {
+        let duration = selectedPreset == .custom ? customDurationHours : selectedPreset.defaultDurationHours
+        return max(duration, 1)
+    }
+
+    /// Expected finish time string for the current selection when not fasting
+    private var selectedExpectedEndString: String {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        let endDate = Date().addingTimeInterval(selectedGoalHours * 3600)
+        return formatter.string(from: endDate)
+    }
     
     // MARK: - Body
     
@@ -49,6 +68,9 @@ struct FastView: View {
                     
                     // Status Info
                     statusInfo
+
+                    // Preset Summary
+                    presetSummary
                     
                     // Action Button
                     actionButton
@@ -62,11 +84,48 @@ struct FastView: View {
             }
             .background(Color.backgroundPrimary)
             .navigationTitle("Fast")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        guard !isFasting else { return }
+                        showingPresetPicker = true
+                        provideSelectionHaptic()
+                    } label: {
+                        Image(systemName: "slider.horizontal.3")
+                    }
+                    .disabled(isFasting)
+                }
+            }
             .onAppear {
+                syncPresetSelection()
                 startTimer()
             }
             .onDisappear {
                 stopTimer()
+            }
+            .sheet(isPresented: $showingPresetPicker) {
+                FastPresetSelectionSheet(
+                    selectedPreset: selectedPreset,
+                    customDurationHours: Int(max(customDurationHours, 1)),
+                    onSelectPreset: { preset in
+                        selectedPreset = preset
+                        customDurationHours = preset.defaultDurationHours
+                        provideSelectionHaptic()
+                    },
+                    onSelectCustom: {
+                        showingCustomPresetSheet = true
+                    }
+                )
+            }
+            .sheet(isPresented: $showingCustomPresetSheet) {
+                CustomFastDurationSheet(
+                    initialDurationHours: Int(max(customDurationHours, 1)),
+                    onSave: { hours in
+                        customDurationHours = Double(hours)
+                        selectedPreset = .custom
+                        provideSelectionHaptic()
+                    }
+                )
             }
         }
     }
@@ -128,11 +187,58 @@ struct FastView: View {
                         .foregroundColor(progress >= 1.0 ? .success : .primary)
                 }
             } else {
-                Text("Ready to start your fast")
-                    .font(.headline)
+                VStack(spacing: Constants.Spacing.small) {
+                    Text(selectedPreset == .custom ? "Custom fast selected" : "Ready to start your fast")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 6) {
+                        Text("Duration")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text("\(Int(selectedGoalHours))h")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Image(systemName: "arrow.forward")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(selectedExpectedEndString)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
                     .foregroundColor(.secondary)
+                }
             }
         }
+    }
+
+    /// Preset summary pill matching design reference
+    private var presetSummary: some View {
+        Button {
+            guard !isFasting else { return }
+            showingPresetPicker = true
+            provideSelectionHaptic()
+        } label: {
+            HStack(spacing: Constants.Spacing.small) {
+                Text(presetDisplayTitle)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                Image(systemName: "pencil")
+                    .font(.caption)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(isFasting ? Color.gray.opacity(0.2) : Color.brandPrimary.opacity(0.12))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isFasting ? Color.gray.opacity(0.2) : Color.brandPrimary.opacity(0.35), lineWidth: 1)
+            )
+            .foregroundColor(isFasting ? .secondary : .primary)
+        }
+        .disabled(isFasting)
     }
     
     /// Action button (Start/Stop)
@@ -153,7 +259,7 @@ struct FastView: View {
                 }
             } else {
                 PrimaryButton(
-                    title: "Start Fasting",
+                    title: "Start \(Int(selectedGoalHours))h Fast",
                     action: startFast,
                     icon: "play.fill"
                 )
@@ -219,6 +325,7 @@ struct FastView: View {
     
     /// Start fasting
     private func startFast() {
+        fastingGoalHours = selectedGoalHours
         fastingStartTime = Date().timeIntervalSince1970
     }
     
@@ -239,6 +346,176 @@ struct FastView: View {
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
+    }
+
+    /// Synchronize preset selection with persisted goal hours
+    private func syncPresetSelection() {
+        if let matchedPreset = FastPreset.allCases.first(where: { $0 != .custom && $0.defaultDurationHours == fastingGoalHours }) {
+            selectedPreset = matchedPreset
+            customDurationHours = matchedPreset.defaultDurationHours
+        } else {
+            selectedPreset = .custom
+            customDurationHours = max(fastingGoalHours, 1)
+        }
+    }
+
+    /// Display title based on preset selection
+    private var presetDisplayTitle: String {
+        if selectedPreset == .custom {
+            return "\(Int(selectedGoalHours))h"
+        }
+        return selectedPreset.displayName
+    }
+
+    /// Provide subtle haptic feedback for preset selection
+    private func provideSelectionHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+    }
+}
+
+/// Sheet allowing users to configure a custom fasting duration
+/// [Rule: Documentation, Forms]
+struct CustomFastDurationSheet: View {
+    
+    // MARK: - Properties
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedHours: Int
+    let onSave: (Int) -> Void
+    
+    private let hourRange = Array(1...48)
+    
+    // MARK: - Initializer
+    
+    init(initialDurationHours: Int, onSave: @escaping (Int) -> Void) {
+        _selectedHours = State(initialValue: max(min(initialDurationHours, 48), 1))
+        self.onSave = onSave
+    }
+    
+    // MARK: - Body
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: Constants.Spacing.large) {
+                VStack(spacing: Constants.Spacing.small) {
+                    Text("Custom Duration")
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    Text("Choose how long you want to fast. You can adjust between 1 and 48 hours.")
+                        .font(.bodyRegular)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .padding(.top, Constants.Spacing.large)
+                
+                Picker("Hours", selection: $selectedHours) {
+                    ForEach(hourRange, id: \.self) { hour in
+                        Text("\(hour) hours")
+                            .font(.headline)
+                            .tag(hour)
+                    }
+                }
+                .pickerStyle(.wheel)
+                .frame(maxWidth: .infinity)
+                
+                Spacer()
+            }
+            .padding(.bottom, Constants.Spacing.large)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        onSave(selectedHours)
+                        dismiss()
+                    }
+                    .font(.headline)
+                }
+            }
+        }
+    }
+}
+
+/// Sheet listing preset options for selection
+/// [Rule: Documentation]
+struct FastPresetSelectionSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let selectedPreset: FastPreset
+    let customDurationHours: Int
+    let onSelectPreset: (FastPreset) -> Void
+    let onSelectCustom: () -> Void
+    
+    private var presets: [FastPreset] {
+        FastPreset.allCases.filter { $0 != .custom }
+    }
+    
+    var body: some View {
+        NavigationView {
+            List {
+                Section("Popular Fasts") {
+                    ForEach(presets, id: \.self) { preset in
+                        Button {
+                            onSelectPreset(preset)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(preset.displayName)
+                                        .font(.headline)
+                                    Text(preset.tagline)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                if preset == selectedPreset {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.brandPrimary)
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Section("Custom") {
+                    Button {
+                        onSelectCustom()
+                        dismiss()
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Custom Duration")
+                                    .font(.headline)
+                                Text("Current: \(customDurationHours)h")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            if selectedPreset == .custom {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.brandPrimary)
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .listStyle(.insetGrouped)
+            .navigationTitle("Fasting Options")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+        }
     }
 }
 
