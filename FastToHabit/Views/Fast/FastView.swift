@@ -358,74 +358,38 @@ struct FastView: View {
         }
     }
 
-    /// History list section
+    /// History chart section showing last 7 fasts
     private var historySection: some View {
-        Card(title: "Fast History") {
-            VStack(spacing: Constants.Spacing.small) {
-                ForEach(sessionStore.history.prefix(5)) { session in
-                    Button {
-                        selectedHistorySession = session
-                    } label: {
-                        historyRow(for: session)
-                    }
-                    .buttonStyle(.plain)
-                    if session.id != sessionStore.history.prefix(5).last?.id {
-                        Divider()
-                    }
-                }
-                if sessionStore.history.count > 5 {
-                    Text("Showing 5 of \(sessionStore.history.count) fasts")
+        let items = Array(sessionStore.history.enumerated().map { _, session in
+            FastSessionChartItem(
+                id: session.id,
+                label: chartLabel(for: session),
+                durationHours: session.elapsedSeconds / 3600,
+                goalHours: session.goalDurationHours,
+                outcome: session.outcome,
+                session: session
+            )
+        }.reversed())
+        let goalHours = activeSession?.goalDurationHours ?? selectedGoalHours
+        return Card(title: "Fast History") {
+            if items.isEmpty {
+                VStack(spacing: Constants.Spacing.medium) {
+                    Text("No fasts yet")
+                        .font(.headline)
+                    Text("Complete a fast to see your progress here.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                        .padding(.top, Constants.Spacing.small)
                 }
+                .frame(maxWidth: .infinity, minHeight: 180)
+            } else {
+                FastHistoryChart(
+                    items: items,
+                    goalHours: goalHours,
+                    onSelect: { selectedHistorySession = $0.session }
+                )
+                .frame(height: 220)
             }
         }
-    }
-
-    private func historyRow(for session: FastSession) -> some View {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        let durationHours = session.elapsedSeconds / 3600
-        return HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: Constants.Spacing.small) {
-                    Text(session.preset == .custom ? "Custom" : session.preset.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                    outcomeBadge(for: session)
-                }
-                
-                if let completion = session.completionDate {
-                    Text(formatter.string(from: completion))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                if let note = session.note, !note.isEmpty {
-                    Text(note)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            Spacer()
-            Text(formattedHours(durationHours))
-                .font(.subheadline)
-                .fontWeight(.medium)
-        }
-    }
-
-    private func summaryStat(title: String, value: String) -> some View {
-        VStack(spacing: 4) {
-            Text(value)
-                .font(.headline)
-                .fontWeight(.semibold)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity)
     }
     
     private func outcomeBadge(for session: FastSession) -> some View {
@@ -448,6 +412,13 @@ struct FastView: View {
         case .early:
             return .orange
         }
+    }
+    
+    private func chartLabel(for session: FastSession) -> String {
+        if let completion = session.completionDate {
+            return completion.formatted(.dateTime.day(.twoDigits).month(.abbreviated))
+        }
+        return "Fast \(session.preset.displayName)"
     }
     
     // MARK: - Computed Strings
@@ -733,6 +704,157 @@ struct FastHistoryDetailSheet: View {
             return "\(Int(hours))h"
         }
         return String(format: "%.1fh", hours)
+    }
+}
+
+/// Lightweight model used for rendering the history chart bars
+/// [Rule: Documentation]
+private struct FastSessionChartItem: Identifiable {
+    let id: UUID
+    let label: String
+    let durationHours: Double
+    let goalHours: Double
+    let outcome: FastSession.Outcome
+    let session: FastSession
+}
+
+private enum FastHistoryChartMetrics {
+    static let minBarHeight: CGFloat = 6
+    static let goalLineThickness: CGFloat = 3
+}
+
+/// Horizontal chart displaying fasting history with goal reference lines
+/// [Rule: Documentation, Styling & Layout]
+private struct FastHistoryChart: View {
+    let items: [FastSessionChartItem]
+    let goalHours: Double
+    let onSelect: (FastSessionChartItem) -> Void
+    
+    @State private var selectedId: UUID?
+    
+    private var maxValue: Double {
+        let maxDuration = items.map { $0.durationHours }.max() ?? 0
+        return max(maxDuration, goalHours, 1)
+    }
+    
+    private var barWidth: CGFloat {
+        36
+    }
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    ZStack(alignment: .bottomLeading) {
+                        goalReferenceLine(totalWidth: geometry.size.width, height: geometry.size.height)
+                        HStack(alignment: .bottom, spacing: Constants.Spacing.medium) {
+                            ForEach(items) { item in
+                                FastHistoryBar(
+                                    item: item,
+                                    maxValue: maxValue,
+                                    barWidth: barWidth,
+                                    isSelected: selectedId == item.id,
+                                    onTap: {
+                                        selectedId = item.id
+                                        onSelect(item)
+                                    }
+                                )
+                                .id(item.id)
+                            }
+                        }
+                        .padding(.horizontal, Constants.Spacing.medium)
+                    }
+                }
+                .onAppear {
+                    guard let last = items.last else { return }
+                    selectedId = last.id
+                    DispatchQueue.main.async {
+                        proxy.scrollTo(last.id, anchor: .trailing)
+                    }
+                }
+            }
+        }
+        .frame(minHeight: 200)
+    }
+    
+    @ViewBuilder
+    private func goalReferenceLine(totalWidth: CGFloat, height: CGFloat) -> some View {
+        if goalHours > 0 {
+            let ratio = min(goalHours / maxValue, 1)
+            let displayHeight = ratio * height
+            let lineHeight = FastHistoryChartMetrics.goalLineThickness
+            let yPosition = height - displayHeight + lineHeight / 2
+            Path { path in
+                path.move(to: CGPoint(x: 0, y: yPosition))
+                path.addLine(to: CGPoint(x: totalWidth, y: yPosition))
+            }
+            .stroke(Color.orange.opacity(0.7), style: StrokeStyle(lineWidth: lineHeight, lineCap: .round))
+        } else {
+            EmptyView()
+        }
+    }
+}
+
+/// Individual bar representation in the fast history chart
+/// [Rule: Documentation, Styling & Layout]
+private struct FastHistoryBar: View {
+    let item: FastSessionChartItem
+    let maxValue: Double
+    let barWidth: CGFloat
+    let isSelected: Bool
+    let onTap: () -> Void
+    
+    private var barColor: Color {
+        switch item.outcome {
+        case .extended:
+            return .brandPrimary
+        case .onTime:
+            return .green
+        case .early:
+            return .orange
+        }
+    }
+    
+    private var goalLineColor: Color {
+        .brandPrimary.opacity(0.6)
+    }
+    
+    var body: some View {
+        VStack(spacing: Constants.Spacing.small) {
+            GeometryReader { geometry in
+                let totalHeight = geometry.size.height
+                let durationRatio = max(min(item.durationHours / maxValue, 1), 0)
+                let goalRatio = max(min(item.goalHours / maxValue, 1), 0)
+                let barHeight = max(durationRatio * totalHeight, FastHistoryChartMetrics.minBarHeight)
+                let goalOffset = -(totalHeight * (1 - goalRatio))
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.secondary.opacity(0.08))
+                    Rectangle()
+                        .fill(goalLineColor)
+                        .frame(height: 2)
+                        .offset(y: goalOffset)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(barColor)
+                        .frame(height: barHeight)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.white.opacity(isSelected ? 0.8 : 0), lineWidth: 2)
+                        )
+                        .shadow(color: barColor.opacity(isSelected ? 0.25 : 0), radius: isSelected ? 6 : 0, y: isSelected ? 4 : 0)
+                }
+            }
+            .frame(width: barWidth)
+            .accessibilityLabel(Text("\(item.label) fast"))
+            .accessibilityValue(Text(String(format: "%.1f hours", item.durationHours)))
+            .accessibilityHint(Text("Double tap for details"))
+            
+            Text(item.label)
+                .font(.caption2)
+                .foregroundColor(.secondary)
+                .frame(width: barWidth)
+        }
+        .onTapGesture(perform: onTap)
     }
 }
 
