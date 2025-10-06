@@ -87,8 +87,6 @@ struct FastView: View {
                     // Active Fast Details
                     if isFasting {
                         activeFastDetails
-                    } else {
-                        fastSummaryCard
                     }
                     
                     // History Section
@@ -355,24 +353,6 @@ struct FastView: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                     }
-                }
-            }
-        }
-    }
-
-    /// Summary stats card when no active fast
-    private var fastSummaryCard: some View {
-        Card(title: "Fasting Summary") {
-            VStack(spacing: Constants.Spacing.medium) {
-                HStack {
-                    summaryStat(title: "Completed", value: "\(sessionStore.completedCount)")
-                    Divider()
-                    summaryStat(title: "Streak", value: "\(sessionStore.currentStreak)")
-                }
-                HStack {
-                    summaryStat(title: "Longest", value: formattedHours(sessionStore.longestFastHours))
-                    Divider()
-                    summaryStat(title: "Average", value: formattedHours(sessionStore.averageFastHours))
                 }
             }
         }
