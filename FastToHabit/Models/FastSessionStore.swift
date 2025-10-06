@@ -48,12 +48,13 @@ final class FastSessionStore: ObservableObject {
     /// - Parameters:
     ///   - completionDate: timestamp when fast completed
     ///   - note: optional note to attach to the finished fast
-    func completeActiveSession(at completionDate: Date = Date(), note: String? = nil) {
+    func completeActiveSession(at completionDate: Date = Date(), note: String? = nil, outcome: FastSession.Outcome = .onTime) {
         guard var session = activeSession else { return }
         session.status = .completed
         session.completionDate = completionDate
         session.note = note
         session.endDate = completionDate
+        session.outcome = outcome
         activeSession = nil
         history.insert(session, at: 0)
         persistActiveSession()

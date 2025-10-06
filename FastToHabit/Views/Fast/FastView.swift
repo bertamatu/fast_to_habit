@@ -16,6 +16,10 @@ struct FastView: View {
     @State private var customDurationHours: Double = 16
     @State private var showingPresetPicker = false
     @State private var showingCustomPresetSheet = false
+    @State private var showingCompletionSheet = false
+    @State private var completionNote: String = ""
+    @State private var selectedHistorySession: FastSession?
+    @State private var pendingOutcome: FastSession.Outcome = .onTime
     
     // MARK: - Computed Properties
     
@@ -23,7 +27,6 @@ struct FastView: View {
     private var activeSession: FastSession? {
         sessionStore.activeSession
     }
-    
     /// Check if currently fasting
     private var isFasting: Bool {
         activeSession != nil
@@ -136,9 +139,27 @@ struct FastView: View {
                     onSave: { hours in
                         customDurationHours = Double(hours)
                         selectedPreset = .custom
-                        provideSelectionHaptic()
                     }
                 )
+            }
+            .sheet(isPresented: $showingCompletionSheet) {
+                CompleteFastSheet(
+                    outcome: pendingOutcome,
+                    durationText: elapsedTimeString,
+                    goalText: "\(Int(activeSession?.goalDurationHours ?? selectedGoalHours))h",
+                    remainingText: pendingOutcome == .early ? remainingTimeString : nil,
+                    note: $completionNote,
+                    onCancel: {
+                        showingCompletionSheet = false
+                        completionNote = ""
+                    },
+                    onComplete: {
+                        confirmEndFast()
+                    }
+                )
+            }
+            .sheet(item: $selectedHistorySession) { session in
+                FastHistoryDetailSheet(session: session)
             }
         }
     }
@@ -362,7 +383,12 @@ struct FastView: View {
         Card(title: "Fast History") {
             VStack(spacing: Constants.Spacing.small) {
                 ForEach(sessionStore.history.prefix(5)) { session in
-                    historyRow(for: session)
+                    Button {
+                        selectedHistorySession = session
+                    } label: {
+                        historyRow(for: session)
+                    }
+                    .buttonStyle(.plain)
                     if session.id != sessionStore.history.prefix(5).last?.id {
                         Divider()
                     }
@@ -384,13 +410,23 @@ struct FastView: View {
         let durationHours = session.elapsedSeconds / 3600
         return HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text(session.preset == .custom ? "Custom" : session.preset.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
+                HStack(spacing: Constants.Spacing.small) {
+                    Text(session.preset == .custom ? "Custom" : session.preset.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                    outcomeBadge(for: session)
+                }
+                
                 if let completion = session.completionDate {
                     Text(formatter.string(from: completion))
                         .font(.caption)
                         .foregroundColor(.secondary)
+                }
+                if let note = session.note, !note.isEmpty {
+                    Text(note)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
             Spacer()
@@ -410,6 +446,28 @@ struct FastView: View {
                 .foregroundColor(.secondary)
         }
         .frame(maxWidth: .infinity)
+    }
+    
+    private func outcomeBadge(for session: FastSession) -> some View {
+        Text(session.outcome == .extended ? "Extended" : session.outcome == .onTime ? "On Goal" : "Early")
+            .font(.caption2)
+            .fontWeight(.semibold)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(outcomeColor(for: session.outcome).opacity(0.18))
+            .foregroundColor(outcomeColor(for: session.outcome))
+            .cornerRadius(8)
+    }
+    
+    private func outcomeColor(for outcome: FastSession.Outcome) -> Color {
+        switch outcome {
+        case .extended:
+            return .brandPrimary
+        case .onTime:
+            return .green
+        case .early:
+            return .orange
+        }
     }
     
     // MARK: - Computed Strings
@@ -455,7 +513,27 @@ struct FastView: View {
     
     /// End fasting
     private func endFast() {
-        sessionStore.completeActiveSession()
+        guard let session = activeSession else { return }
+        completionNote = ""
+        let actualSeconds = Date().timeIntervalSince(session.startDate)
+        let goalSeconds = session.goalDurationHours * 3600
+        if actualSeconds >= goalSeconds {
+            let extendedThreshold = goalSeconds * 1.1
+            pendingOutcome = actualSeconds >= extendedThreshold ? .extended : .onTime
+        } else {
+            pendingOutcome = .early
+        }
+        showingCompletionSheet = true
+    }
+    
+    /// Confirm completion of fast and persist note
+    private func confirmEndFast() {
+        sessionStore.completeActiveSession(
+            note: completionNote.isEmpty ? nil : completionNote,
+            outcome: pendingOutcome
+        )
+        showingCompletionSheet = false
+        completionNote = ""
         stopTimer()
     }
     
@@ -580,6 +658,229 @@ struct CustomFastDurationSheet: View {
                 }
             }
         }
+    }
+}
+
+/// Detail sheet rendering a completed fast history entry
+/// [Rule: Documentation]
+struct FastHistoryDetailSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let session: FastSession
+    
+    private var durationHours: Double {
+        session.elapsedSeconds / 3600
+    }
+    
+    private var startDate: Date { session.startDate }
+    private var endDate: Date { session.completionDate ?? session.expectedEndDate }
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Constants.Spacing.large) {
+                    summarySection
+                    noteSection
+                }
+                .padding(Constants.Spacing.large)
+            }
+            .navigationTitle("Fast Details")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+    
+    private var summarySection: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.medium) {
+            Text(session.preset == .custom ? "Custom Fast" : session.preset.displayName)
+                .font(.title3)
+                .fontWeight(.semibold)
+            
+            detailRow(title: "Duration", value: formattedHours(durationHours))
+            detailRow(title: "Started", value: startDate.formatted(date: .abbreviated, time: .shortened))
+            detailRow(title: "Completed", value: endDate.formatted(date: .abbreviated, time: .shortened))
+            detailRow(title: "Goal", value: "\(Int(session.goalDurationHours))h")
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color.cardBackground)
+        )
+    }
+    
+    @ViewBuilder
+    private var noteSection: some View {
+        if let note = session.note, !note.isEmpty {
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("Note")
+                    .font(.headline)
+                Text(note)
+                    .font(.bodyRegular)
+                    .foregroundColor(.primary)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                Text("No notes added")
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Text("Capture reflections when ending a fast to see them here.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private func detailRow(title: String, value: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(value)
+                .font(.subheadline)
+                .fontWeight(.medium)
+        }
+    }
+    
+    private func formattedHours(_ hours: Double) -> String {
+        if hours >= 10 {
+            return "\(Int(hours))h"
+        }
+        return String(format: "%.1fh", hours)
+    }
+}
+
+/// Sheet presented when ending a fast to capture notes
+/// [Rule: Documentation, Forms]
+struct CompleteFastSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    let outcome: FastSession.Outcome
+    let durationText: String
+    let goalText: String
+    let remainingText: String?
+    @Binding var note: String
+    let onCancel: () -> Void
+    let onComplete: () -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack(alignment: .leading, spacing: Constants.Spacing.large) {
+                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                    Text(headerTitle)
+                        .font(.title3)
+                        .fontWeight(.semibold)
+                    Text(headerMessage)
+                        .font(.bodyRegular)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                summaryChips
+                
+                reflectionSection
+                
+                Spacer()
+            }
+            .padding(Constants.Spacing.large)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(cancelTitle) {
+                        onCancel()
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(confirmTitle) {
+                        onComplete()
+                        dismiss()
+                    }
+                    .font(.headline)
+                }
+            }
+        }
+    }
+    
+    private var cancelTitle: String {
+        outcome == .early ? "Keep Fasting" : "Cancel"
+    }
+    
+    private var confirmTitle: String {
+        outcome == .early ? "End Anyway" : "Save"
+    }
+    
+    private var headerTitle: String {
+        switch outcome {
+        case .extended:
+            return "Amazing Commitment! 🔥"
+        case .onTime:
+            return "Fast Complete 🎉"
+        case .early:
+            return "End Fast Early?"
+        }
+    }
+    
+    private var headerMessage: String {
+        switch outcome {
+        case .extended:
+            return "You went beyond your goal. Take a moment to celebrate this win!"
+        case .onTime:
+            return "Great job hitting your fasting goal. Capture how you feel while it's fresh."
+        case .early:
+            return "You're ending ahead of schedule. It's okay—listen to your body. Want to keep fasting a bit longer?"
+        }
+    }
+    
+    private var summaryChips: some View {
+        VStack(spacing: Constants.Spacing.small) {
+            HStack {
+                summaryChip(title: "Duration", value: durationText)
+                summaryChip(title: "Goal", value: goalText)
+            }
+            if outcome == .early, let remainingText {
+                summaryChip(title: "Time Left", value: remainingText)
+            }
+        }
+    }
+    
+    private var reflectionSection: some View {
+        VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+            Text(outcome == .early ? "What will you try next?" : "Reflection")
+                .font(.headline)
+            TextEditor(text: $note)
+                .frame(minHeight: 120)
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.secondary.opacity(0.08))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.secondary.opacity(0.12), lineWidth: 1)
+                )
+        }
+    }
+    
+    private func summaryChip(title: String, value: String) -> some View {
+        VStack(spacing: 6) {
+            Text(value)
+                .font(.headline)
+                .fontWeight(.semibold)
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.brandPrimary.opacity(0.1))
+        )
     }
 }
 

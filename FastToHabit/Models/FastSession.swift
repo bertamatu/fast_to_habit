@@ -76,6 +76,13 @@ struct FastSession: Codable, Identifiable, Equatable {
         case cancelled
     }
     
+    /// Represents how the fast concluded relative to its goal
+    enum Outcome: String, Codable {
+        case onTime
+        case extended
+        case early
+    }
+    
     // MARK: - Properties
     
     /// Unique identifier for the session
@@ -103,6 +110,9 @@ struct FastSession: Codable, Identifiable, Equatable {
     /// Timestamp when the fast was marked as completed
     var completionDate: Date?
     
+    /// Outcome describing whether the fast met, exceeded, or fell short of goal
+    var outcome: Outcome
+    
     // MARK: - Initializer
     
     /// Initializes a new fasting session instance
@@ -123,7 +133,8 @@ struct FastSession: Codable, Identifiable, Equatable {
         endDate: Date? = nil,
         status: Status = .active,
         note: String? = nil,
-        completionDate: Date? = nil
+        completionDate: Date? = nil,
+        outcome: Outcome = .onTime
     ) {
         self.id = id
         self.preset = preset
@@ -133,6 +144,47 @@ struct FastSession: Codable, Identifiable, Equatable {
         self.status = status
         self.note = note
         self.completionDate = completionDate
+        self.outcome = outcome
+    }
+    
+    // MARK: - Codable
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case preset
+        case startDate
+        case goalDurationHours
+        case endDate
+        case status
+        case note
+        case completionDate
+        case outcome
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decode(UUID.self, forKey: .id)
+        self.preset = try container.decode(FastPreset.self, forKey: .preset)
+        self.startDate = try container.decode(Date.self, forKey: .startDate)
+        self.goalDurationHours = try container.decode(Double.self, forKey: .goalDurationHours)
+        self.endDate = try container.decodeIfPresent(Date.self, forKey: .endDate)
+        self.status = try container.decode(Status.self, forKey: .status)
+        self.note = try container.decodeIfPresent(String.self, forKey: .note)
+        self.completionDate = try container.decodeIfPresent(Date.self, forKey: .completionDate)
+        self.outcome = try container.decodeIfPresent(Outcome.self, forKey: .outcome) ?? .onTime
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(preset, forKey: .preset)
+        try container.encode(startDate, forKey: .startDate)
+        try container.encode(goalDurationHours, forKey: .goalDurationHours)
+        try container.encodeIfPresent(endDate, forKey: .endDate)
+        try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(note, forKey: .note)
+        try container.encodeIfPresent(completionDate, forKey: .completionDate)
+        try container.encode(outcome, forKey: .outcome)
     }
     
     // MARK: - Computed Properties
