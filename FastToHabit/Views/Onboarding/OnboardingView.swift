@@ -13,11 +13,11 @@ struct OnboardingView: View {
     /// Current page index
     @State private var currentPage = 0
     
-    /// User's height in cm
-    @State private var height: String = ""
-    
     /// User's weight in kg
     @State private var weight: String = ""
+    
+    /// User's goal weight in kg
+    @State private var goalWeight: String = ""
     
     /// Callback when onboarding is completed
     var onComplete: () -> Void
@@ -185,22 +185,9 @@ struct OnboardingView: View {
             }
             
             VStack(spacing: Constants.Spacing.medium) {
-                // Height input
+                // Current Weight input
                 VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                    Text("Height (cm)")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    
-                    TextField("170", text: $height)
-                        .keyboardType(.decimalPad)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.bodyRegular)
-                        .accessibilityLabel("Height in centimeters")
-                }
-                
-                // Weight input
-                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
-                    Text("Weight (kg)")
+                    Text("Current Weight (kg)")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
@@ -208,7 +195,20 @@ struct OnboardingView: View {
                         .keyboardType(.decimalPad)
                         .textFieldStyle(.roundedBorder)
                         .font(.bodyRegular)
-                        .accessibilityLabel("Weight in kilograms")
+                        .accessibilityLabel("Current weight in kilograms")
+                }
+                
+                // Goal Weight input
+                VStack(alignment: .leading, spacing: Constants.Spacing.small) {
+                    Text("Goal Weight (kg)")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                    
+                    TextField("65", text: $goalWeight)
+                        .keyboardType(.decimalPad)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.bodyRegular)
+                        .accessibilityLabel("Goal weight in kilograms")
                 }
                 
                 Text("You can skip this and add it later in settings")
@@ -262,11 +262,11 @@ struct OnboardingView: View {
     /// Complete onboarding and dismiss
     private func completeOnboarding() {
         // Save user data if provided
-        if !height.isEmpty {
-            UserDefaults.standard.set(height, forKey: "userHeight")
-        }
         if !weight.isEmpty {
             UserDefaults.standard.set(weight, forKey: "userWeight")
+        }
+        if !goalWeight.isEmpty {
+            UserDefaults.standard.set(goalWeight, forKey: "userGoalWeight")
         }
         
         hasCompletedOnboarding = true

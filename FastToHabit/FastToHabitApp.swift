@@ -28,7 +28,6 @@
  */
 
 import SwiftUI
-import SwiftData
 
 @main
 struct FastToHabitApp: App {
@@ -37,21 +36,6 @@ struct FastToHabitApp: App {
     
     @State private var showLaunchScreen = true
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    
-    // MARK: - Model Container
-    
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
 
     // MARK: - Body
     
@@ -60,7 +44,7 @@ struct FastToHabitApp: App {
             ZStack {
                 // Main content or onboarding
                 if hasCompletedOnboarding {
-                    ContentView()
+                    MainTabView()
                         .opacity(showLaunchScreen ? 0 : 1)
                 } else {
                     OnboardingView(onComplete: {
@@ -85,6 +69,5 @@ struct FastToHabitApp: App {
                 }
             }
         }
-        .modelContainer(sharedModelContainer)
     }
 }
