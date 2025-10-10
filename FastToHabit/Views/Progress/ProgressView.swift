@@ -11,10 +11,120 @@ struct ProgressView: View {
     @AppStorage("userGoalWeight") private var goalWeight: String = ""
     @State private var weightEntries: [WeightEntry] = []
     @State private var showingAddWeight = false
+    @State private var showingAddGoalWeight = false
     
     // Computed property to check if we have any data
     private var hasData: Bool {
         !currentWeight.isEmpty || !weightEntries.isEmpty
+    }
+
+    /// Goal weight column with add prompt when missing
+    private var goalWeightColumn: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Goal Weight")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                if !goalWeight.isEmpty {
+                    Text("\(goalWeight) kg")
+                        .font(.titleMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.brandPrimary)
+                } else {
+                    Button {
+                        showingAddGoalWeight = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                            Text("Add Goal")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                        }
+                        .foregroundColor(.brandPrimary)
+                    }
+                }
+            }
+            
+            Spacer()
+            
+            if !goalWeight.isEmpty {
+                goalInlineStatus
+            } else {
+                statusIndicator(title: "Status", detail: "Set", color: .success, icon: "checkmark.circle.fill")
+            }
+        }
+    }
+
+    /// Inline status chip showing goal progress snapshot
+    private var goalInlineStatus: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            if let diff = weightDifference {
+                let isGoalMet = diff <= 0
+                Text(isGoalMet ? "Goal Reached" : "Still to Go")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                HStack(spacing: 4) {
+                    Image(systemName: isGoalMet ? "checkmark.seal.fill" : "arrow.down")
+                        .font(.caption)
+                    Text(isGoalMet ? "Great progress" : String(format: "%.1f kg", diff))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                }
+                .foregroundColor(isGoalMet ? .success : .brandPrimary)
+            } else {
+                statusIndicator(title: "Goal", detail: "Not set", color: .secondary, icon: "exclamationmark.triangle")
+            }
+        }
+    }
+
+    /// Info reminder chip promoting settings updates
+    private var infoReminder: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "info.circle")
+                .foregroundColor(.brandPrimary)
+            Text("Keep your stats fresh from Settings")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+    }
+
+    /// Inline progress snapshot for quick glance
+    private var progressSummaryChip: some View {
+        Group {
+            if weightProgress > 0 && !goalWeight.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: "chart.bar.fill")
+                        .foregroundColor(.brandPrimary)
+                        .font(.caption)
+                    Text(String(format: "%d%% to goal", Int(weightProgress * 100)))
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.brandPrimary)
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 10)
+                .background(Color.brandPrimary.opacity(0.12))
+                .clipShape(Capsule())
+            }
+        }
+    }
+
+    /// Convenience builder for status chip
+    private func statusIndicator(title: String, detail: String, color: Color, icon: String) -> some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            HStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.caption)
+                Text(detail)
+                    .font(.subheadline)
+            }
+            .foregroundColor(color)
+        }
     }
     
     // Calculate weight difference
@@ -85,6 +195,14 @@ struct ProgressView: View {
             .sheet(isPresented: $showingAddWeight) {
                 AddWeightView(onSave: loadWeightEntries)
             }
+            .sheet(isPresented: $showingAddGoalWeight) {
+                AddGoalWeightSheet(
+                    currentGoalWeight: goalWeight,
+                    onSave: { newGoal in
+                        goalWeight = newGoal
+                    }
+                )
+            }
             .onAppear {
                 loadWeightEntries()
             }
@@ -98,13 +216,12 @@ struct ProgressView: View {
         Card(title: "Weight Tracking") {
             VStack(spacing: Constants.Spacing.medium) {
                 if !currentWeight.isEmpty {
-                    // Current weight display
-                    HStack {
+                    // Current vs goal weight display
+                    HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Current Weight")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            
                             Text("\(currentWeight) kg")
                                 .font(.titleLarge)
                                 .fontWeight(.bold)
@@ -113,30 +230,15 @@ struct ProgressView: View {
                         
                         Spacer()
                         
-                        // Status indicator
-                        VStack(alignment: .trailing, spacing: 4) {
-                            Text("Status")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.caption)
-                                Text("Set")
-                                    .font(.subheadline)
-                            }
-                            .foregroundColor(.success)
-                        }
+                        goalWeightColumn
                     }
                     
                     Divider()
                     
-                    // Info message
-                    HStack(spacing: 8) {
-                        Image(systemName: "info.circle")
-                            .foregroundColor(.brandPrimary)
-                        Text("Update your weight in Settings to track progress over time")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                    HStack(spacing: 12) {
+                        progressSummaryChip
+                        Spacer()
+                        infoReminder
                     }
                 } else {
                     // No weight set
