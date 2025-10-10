@@ -30,7 +30,6 @@ struct PlanningView: View {
                 }
                 .padding(Constants.Spacing.large)
             }
-            .navigationTitle("Planning")
         }
     }
 }

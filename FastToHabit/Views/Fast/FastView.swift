@@ -97,7 +97,6 @@ struct FastView: View {
                 .padding(Constants.Spacing.large)
             }
             .background(Color.backgroundPrimary)
-            .navigationTitle("Fast")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {

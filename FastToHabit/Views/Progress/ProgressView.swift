@@ -168,11 +168,6 @@ struct ProgressView: View {
                         if !goalWeight.isEmpty {
                             weightGoalSection
                         }
-                        
-                        // Weight History
-                        if !weightEntries.isEmpty {
-                            weightHistorySection
-                        }
                     } else {
                         // Empty State
                         emptyStateView
@@ -181,7 +176,6 @@ struct ProgressView: View {
                 .padding(Constants.Spacing.medium)
             }
             .background(Color.backgroundPrimary)
-            .navigationTitle("Progress")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {

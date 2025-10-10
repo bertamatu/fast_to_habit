@@ -37,7 +37,6 @@ struct SettingsView: View {
                 // Reset Section
                 resetSection
             }
-            .navigationTitle("Settings")
         }
         .sheet(isPresented: $showingProfileEdit) {
             ProfileEditView()
