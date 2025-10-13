@@ -12,28 +12,25 @@ struct PlanningView: View {
     @State private var showingGoalSettings = false
     @State private var showingAddMeal = false
     @State private var editingMeal: PlannedMeal?
+    @State private var selectedDate = Date.now
     
     // MARK: - Body
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: Constants.Spacing.large) {
-                    waterIntakeSection
-                    mealPlanSection
-                }
-                .padding(Constants.Spacing.medium)
-            }
-            .background(Color.backgroundPrimary)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingGoalSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(.brandPrimary)
+            VStack(spacing: 0) {
+                // Top navigation bar with month selector and settings
+                topNavigationBar
+                
+                ScrollView {
+                    VStack(spacing: Constants.Spacing.large) {
+                        weekCalendar
+                        waterIntakeSection
+                        mealPlanSection
                     }
+                    .padding(Constants.Spacing.medium)
                 }
+                .background(Color.backgroundPrimary)
             }
             .sheet(isPresented: $showingGoalSettings) {
                 WaterGoalSettingsSheet(
@@ -64,6 +61,173 @@ struct PlanningView: View {
     }
     
     // MARK: - Sections
+    
+    /// Top navigation bar with month selector and settings icon
+    private var topNavigationBar: some View {
+        HStack {
+            // Month selector with dropdown of all months
+            Menu {
+                ForEach(availableMonths, id: \.self) { date in
+                    Button {
+                        selectedDate = date
+                    } label: {
+                        HStack {
+                            Text(date.formatted(.dateTime.month(.wide).year()))
+                            if Calendar.current.isDate(date, equalTo: selectedDate, toGranularity: .month) {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(selectedDate.formatted(.dateTime.month(.wide).year()))
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.subheadline)
+                        .foregroundColor(.primary)
+                }
+            }
+            
+            Spacer()
+            
+            // Settings button
+            Button {
+                showingGoalSettings = true
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.title2)
+                    .foregroundColor(.brandPrimary)
+            }
+        }
+        .padding(.horizontal, Constants.Spacing.medium)
+        .padding(.vertical, Constants.Spacing.small)
+        .background(Color.backgroundPrimary)
+    }
+    
+    /// Weekly calendar view with Monday as first day - swipeable to change weeks
+    private var weekCalendar: some View {
+        TabView(selection: $selectedDate) {
+            ForEach(availableWeeks, id: \.self) { weekStartDate in
+                HStack(spacing: 0) {
+                    ForEach(getWeekDays(from: weekStartDate), id: \.self) { date in
+                        weekDayColumn(for: date)
+                    }
+                }
+                .tag(weekStartDate)
+            }
+        }
+        .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
+        .frame(height: 100)
+        .onChange(of: selectedDate) { oldValue, newValue in
+            // Update month selector when week changes to a different month
+            if !Calendar.current.isDate(oldValue, equalTo: newValue, toGranularity: .month) {
+                // Month changed, no additional action needed as selectedDate already updated
+            }
+        }
+    }
+    
+    /// Individual day column in the weekly calendar
+    private func weekDayColumn(for date: Date) -> some View {
+        let isToday = Calendar.current.isDateInToday(date)
+        let dayName = date.formatted(.dateTime.weekday(.abbreviated)).uppercased()
+        let dayNumber = date.formatted(.dateTime.day())
+        
+        return VStack(spacing: 8) {
+            // Day name (MON, TUE, etc.)
+            Text(dayName)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(isToday ? .primary : .secondary)
+            
+            // Day number
+            Text(dayNumber)
+                .font(.title3)
+                .fontWeight(isToday ? .bold : .regular)
+                .foregroundColor(.primary)
+            
+            // Indicator dot for today
+            Circle()
+                .fill(isToday ? Color.primary : Color.clear)
+                .frame(width: 6, height: 6)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isToday ? Color.primary.opacity(0.1) : Color.clear)
+        )
+    }
+    
+    /// Computed property to get the current week starting from Monday
+    private var weekDays: [Date] {
+        return getWeekDays(from: selectedDate)
+    }
+    
+    /// Helper function to get week days for a given date
+    private func getWeekDays(from date: Date) -> [Date] {
+        let calendar = Calendar.current
+        
+        // Get the start of the week (Monday) for the given date
+        let startOfWeek = calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: date).date!
+        
+        // Ensure Monday is the first day
+        var weekDays: [Date] = []
+        for dayOffset in 0..<7 {
+            if let day = calendar.date(byAdding: .day, value: dayOffset, to: startOfWeek) {
+                weekDays.append(day)
+            }
+        }
+        
+        return weekDays
+    }
+    
+    /// Computed property to generate available months (6 months back, current, 6 months forward)
+    private var availableMonths: [Date] {
+        let calendar = Calendar.current
+        let today = Date.now
+        var months: [Date] = []
+        
+        // Generate months from 6 months ago to 6 months in the future
+        for monthOffset in -6...6 {
+            if let month = calendar.date(byAdding: .month, value: monthOffset, to: today),
+               let firstDayOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: month)) {
+                months.append(firstDayOfMonth)
+            }
+        }
+        
+        return months
+    }
+    
+    /// Computed property to generate available weeks (for swipeable calendar)
+    private var availableWeeks: [Date] {
+        let calendar = Calendar.current
+        let today = Date.now
+        var weeks: [Date] = []
+        
+        // Generate weeks from 12 weeks ago to 12 weeks in the future
+        for weekOffset in -12...12 {
+            if let week = calendar.date(byAdding: .weekOfYear, value: weekOffset, to: today),
+               let startOfWeek = calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: week).date {
+                weeks.append(startOfWeek)
+            }
+        }
+        
+        return weeks
+    }
+    
+    // MARK: - Actions
+    
+    /// Changes the selected month by the specified offset
+    private func changeMonth(by offset: Int) {
+        let calendar = Calendar.current
+        if let newDate = calendar.date(byAdding: .month, value: offset, to: selectedDate) {
+            selectedDate = newDate
+        }
+    }
     
     /// Water intake tracking section with progress bar
     private var waterIntakeSection: some View {
