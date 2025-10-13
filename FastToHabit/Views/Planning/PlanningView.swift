@@ -12,27 +12,48 @@ struct PlanningView: View {
     @State private var showingGoalSettings = false
     @State private var showingAddMeal = false
     @State private var editingMeal: PlannedMeal?
+    @State private var selectedDate: Date = {
+        // Initialize to the start of the current week (Monday)
+        let calendar = Calendar.current
+        let today = Date.now
+        return calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: today).date ?? today
+    }()
     
     // MARK: - Body
     
     var body: some View {
         NavigationView {
-            ScrollView {
-                VStack(spacing: Constants.Spacing.large) {
-                    waterIntakeSection
-                    mealPlanSection
-                }
-                .padding(Constants.Spacing.medium)
-            }
-            .background(Color.backgroundPrimary)
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
+            VStack(spacing: 0) {
+                // Top navigation bar with month selector and settings
+                MonthSelectorView(
+                    selectedDate: $selectedDate,
+                    onSettingsTapped: {
                         showingGoalSettings = true
-                    } label: {
-                        Image(systemName: "gearshape.fill")
-                            .foregroundColor(.brandPrimary)
                     }
+                )
+                
+                ScrollView {
+                    VStack(spacing: Constants.Spacing.large) {
+                        // Swipeable week calendar with data indicators
+                        WeekCalendarView(
+                            selectedDate: $selectedDate,
+                            waterStore: waterStore,
+                            mealStore: mealStore
+                        )
+                        
+                        waterIntakeSection
+                        mealPlanSection
+                    }
+                    .padding(Constants.Spacing.medium)
+                }
+                .background(Color.backgroundPrimary)
+            }
+            .onAppear {
+                // Ensure we're showing today's week when view appears
+                let calendar = Calendar.current
+                let today = Date.now
+                if let startOfWeek = calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: today).date {
+                    selectedDate = startOfWeek
                 }
             }
             .sheet(isPresented: $showingGoalSettings) {
