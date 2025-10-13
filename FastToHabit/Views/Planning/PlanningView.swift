@@ -34,8 +34,12 @@ struct PlanningView: View {
                 
                 ScrollView {
                     VStack(spacing: Constants.Spacing.large) {
-                        // Swipeable week calendar
-                        WeekCalendarView(selectedDate: $selectedDate)
+                        // Swipeable week calendar with data indicators
+                        WeekCalendarView(
+                            selectedDate: $selectedDate,
+                            waterStore: waterStore,
+                            mealStore: mealStore
+                        )
                         
                         waterIntakeSection
                         mealPlanSection
